@@ -1,0 +1,4 @@
+select *
+from smd_member_address_20150917
+where lat is not null
+order by id;
