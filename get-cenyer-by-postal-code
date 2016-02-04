@@ -1,0 +1,78 @@
+POST /webservices/bionicdirector/bionicdirector.asmx HTTP/1.1
+Host: www.bionicdirector.com
+Content-Type: text/xml; charset=utf-8
+Content-Length: length
+SOAPAction: "http://tempuri.org/GetCenterByPostalCode"
+
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <GetCenterByPostalCode xmlns="http://tempuri.org/">
+      <input>
+        <Login>
+          <UserID>string</UserID>
+          <Password>string</Password>
+        </Login>
+        <PostalCode>string</PostalCode>
+        <Country>string</Country>
+      </input>
+    </GetCenterByPostalCode>
+  </soap:Body>
+</soap:Envelope>
+HTTP/1.1 200 OK
+Content-Type: text/xml; charset=utf-8
+Content-Length: length
+
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <GetCenterByPostalCodeResponse xmlns="http://tempuri.org/">
+      <GetCenterByPostalCodeResult>
+        <CenterInfo>
+          <CenterID>int</CenterID>
+          <CenterName>string</CenterName>
+          <PhoneNumber>string</PhoneNumber>
+          <Street1>string</Street1>
+          <Street2>string</Street2>
+          <City>string</City>
+          <State>string</State>
+          <PostalCode>string</PostalCode>
+          <Country>string</Country>
+          <AltChoice>int</AltChoice>
+          <EmailGeneral>string</EmailGeneral>
+          <EmailLeads>string</EmailLeads>
+          <MaxAppointment>int</MaxAppointment>
+          <AdvanceNotice>int</AdvanceNotice>
+          <KidsAge>int</KidsAge>
+          <ContactName>string</ContactName>
+          <DrivingDirections>string</DrivingDirections>
+          <CallPermissionLanguage>string</CallPermissionLanguage>
+          <DecisionTonightLanguage>string</DecisionTonightLanguage>
+          <TourSchedule>string</TourSchedule>
+        </CenterInfo>
+        <CenterPolicyInfo>
+          <CenterID>int</CenterID>
+          <CantMakeItStart>boolean</CantMakeItStart>
+          <NumberOfAppointmentsToOffer>int</NumberOfAppointmentsToOffer>
+          <CheckSpouseExists>boolean</CheckSpouseExists>
+          <CheckSpouseFirmly>boolean</CheckSpouseFirmly>
+          <CheckSitter>boolean</CheckSitter>
+          <SendConfirmationEmail>boolean</SendConfirmationEmail>
+          <SendNoShowEmail>boolean</SendNoShowEmail>
+          <ObtainPermissionToCall>boolean</ObtainPermissionToCall>
+          <AllowRoundRobin>boolean</AllowRoundRobin>
+          <AllowDirectorEmail>boolean</AllowDirectorEmail>
+          <ObtainReferingMember>boolean</ObtainReferingMember>
+          <ObtainAdCode>boolean</ObtainAdCode>
+          <AllowSelectDirector>boolean</AllowSelectDirector>
+        </CenterPolicyInfo>
+        <OutOfTerritoryID>int</OutOfTerritoryID>
+        <OutOfTerritory>boolean</OutOfTerritory>
+        <Message>
+          <MessageType>int</MessageType>
+          <MessageText>string</MessageText>
+        </Message>
+      </GetCenterByPostalCodeResult>
+    </GetCenterByPostalCodeResponse>
+  </soap:Body>
+</soap:Envelope>
