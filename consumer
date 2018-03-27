@@ -1,0 +1,215 @@
+<?php namespace Api\Http\Controllers\api;
+
+use Api\Http\Controllers\Controller;
+use Input;
+
+class ApiController extends Controller { 
+
+	public static $search_key = '';
+
+
+	/**
+	 * Create a new controller instance.
+	 *
+	 * @return void
+	 */
+	public function __construct()
+	{
+		$this->middleware('guest');
+	}
+
+	/**
+	 * Show the application welcome screen to the user.
+	 *
+	 * @return Response
+	 */
+	public function index()
+	{
+		return $this->homeFeeds();
+	}
+	
+	/**
+	 * Show the application welcome screen to the user.
+	 *
+	 * @return Response
+	 */
+	public function setTest()
+	{
+		return json_encode(['Api\ApiController.php@setTest' => ['Hello' => 'API!', 'ENV' => $_ENV['APP_ENV']] ]);
+	}
+	
+	public function homeFeeds($member_id)
+	{	
+	
+		$this->shoutObj					= 	new	\Shout;
+		$surveyObj						=	new	\MemberSurvey;
+		$this->memberObj				=	new \Member;
+		$rss_on_top						=	true;
+		$shout_count 					= 	0;
+		$news_count						=	0;
+		$total_count					=	0;
+		$news_position					=	4;	
+		$total_home 					=	10;
+		$home_feeds						=	[];
+		$this->memberObj->member_id		=	$member_id;
+		$this->shoutObj->member_id		=	$member_id;		
+		
+		if ( Input::get('filter_by') === null && Input::get('group_by') === null ) {
+			$this->shoutObj->total_news		=	(($total_home/$news_position));
+			$this->shoutObj->total_news		=	ceil($this->shoutObj->total_news);		
+			$this->shoutObj->total_shouts	=	ceil($total_home - $this->shoutObj->total_news);
+		} else {
+			$this->shoutObj->total_shouts =	$total_home;
+			$this->shoutObj->total_news	=	0;
+		}
+		
+		if ( !$rss_on_top ) {
+			$this->shoutObj->total_shouts++;
+		}
+		
+		if ( Input::get('page_shouts') !== null ) {
+			$this->shoutObj->page_shouts = Input::get('page_shouts');
+		} else {
+			$this->shoutObj->page_shouts = 0;
+		}
+		
+		if ( Input::get('page_news') !== null ) {
+			$this->shoutObj->page_news = Input::get('page_news');
+		} else {
+			$this->shoutObj->page_news = 0;
+		}		
+	
+		$this->member 	=	$this->memberObj->getMemberById();
+ 
+ 		$this->shoutObj->founder	=	0;
+		$this->shoutObj->investor	=	0;
+		$this->shoutObj->employee	=	0;
+		
+		$group_by = $this->checkForGroupBy();
+		$filter_by_method = $this->checkForFilterBy();						
+		$hasSurvey	=	$surveyObj->userHasIncompleteSurveys($member_id);
+ 
+ 
+		foreach( $this->shouts as $idx => $shout ) {
+			unset($shout->shout_id);
+			unset($shout->asset_name);
+			unset($shout->asset_url);
+			unset($shout->asset_thumbnail);
+			unset($shout->asset_type);
+		}
+	    $this->shouts = $this->sortCollectionWithRelationships($this->shouts, array('comments','likes'), 'shout_id', 'updated_at', 'DESC');
+
+		foreach ($this->shouts as $idx => $shout ) {
+			if ( $shout_count % $news_position == 0 && ($shout_count != 0 || $rss_on_top) && !$filter_by_method && !$group_by ) {
+				if ( $total_count < $total_home && isset($this->news_feeds[$news_count])) {
+					$home_feeds[$total_count] = $this->news_feeds[$news_count];
+				}
+				$news_count++;
+				$total_count++;
+			}
+			if ( $total_count < $total_home ) {
+				$home_feeds[$total_count] = $shout;
+				$shout_count++;
+				$total_count++;
+			}
+		}
+		echo "<p>Total: <b>{$total_count}</b></p>";
+		
+		if ( $total_count < $total_home  && isset($this->news_feeds[$news_count]) && !$filter_by_method && !$group_by) {			
+			$home_feeds[$total_count] = $this->news_feeds[$news_count];
+			$news_count++;
+		}
+
+		$this->shoutObj->page_shouts	+=		$shout_count;
+		$this->shoutObj->page_news		+=		$news_count;
+
+		echo count($home_feeds);
+		
+		$all_shouts = ['page_shouts' => $this->shoutObj->page_shouts, 'page_news' => $this->shoutObj->page_news,'has_incomplete_survey' => $hasSurvey, 'home_feeds' => $home_feeds];
+		
+		return \Response::json($all_shouts, $status=200, $headers=[], $options=JSON_PRETTY_PRINT);		
+	}
+	
+	private function checkForFilterBy()
+	{
+		$filter_by_method = false;
+		
+		if ( Input::get('filter_by') !== null ) {
+			$filter_by_method = "getfilterBy" . ucwords(strtolower(Input::get('filter_by')));
+			if ( method_exists($this->shoutObj, $filter_by_method) ) {
+				$this->shouts = $this->shoutObj->{$filter_by_method}();
+				$filter_by_method = true;
+			} else {
+				// The filterBy method doesn't exist, show All shouts instead.
+				$this->shouts = $this->shoutObj->getAllShouts();
+			}
+		} else {
+			$this->shoutObj->shout_types = ['poll','shout'];
+			$this->shouts = $this->shoutObj->getAllShouts();
+			$this->news_feeds	=	$this->shoutObj->getNews();		
+		}		
+		
+		
+		return $filter_by_method;	
+	}
+	
+	private function checkForGroupBy()
+	{
+		$group_by = false;
+
+		if ( Input::get('group_by') !== null ) {
+			
+			$group_by = Input::get('group_by');			
+			
+			if ( $group_by == 'founder' && $this->member->membertype_id = 2 ) {
+				$this->shoutObj->founder	= 	1;
+			} elseif ( $group_by == 'investor' && $this->member->membertype_id = 5 ) {
+				$this->shoutObj->investor	=	1;
+			} elseif ( $group_by == 'employee' ) {
+				$this->shoutObj->employee	=	1;
+			}
+			$group_by = true;					
+		}
+		return $group_by;	
+	}
+	
+	private function sortCollectionWithRelationships($obj, array $relations, $FK, $search_key, $order = 'ASC')
+	{
+		$exclude_arr = [];
+		$idx = 0;
+											
+		foreach( $obj as $collection ) 
+		{	
+			$sort_array[$idx] 				= $collection;
+			$sort_array[$idx][$FK]			= $collection->id;
+			$sort_array[$idx]['type'] 		= get_class($collection);
+			$idx++;
+		
+			// Gather up the collection relationships and move them up one level to sit parallel with the collection itself
+			foreach ( $relations as $relation ) {
+				foreach ($collection->{$relation} as $relationship )
+				{	
+					$sort_array[$idx] = $relationship;
+					$sort_array[$idx]['type'] = $relation;
+					$idx++;
+				}						
+			}
+		}
+		
+		$sort_array = \Api\Helpers\Utils::sortWithKeyByNaturalOrder($sort_array,$search_key,'DESC');
+				
+		$collections = [];
+		foreach ( $sort_array as $sorted ) {
+			foreach ( $obj as $collection ) {
+				if ( $collection->id == $sorted->{$FK} && !in_array($collection->id, $exclude_arr)) {
+					$collections[] = $collection;
+					$exclude_arr[] =  $collection->id;  // Comments and Likes take precendent, 
+				} else {
+					continue;
+				}
+			}
+		}
+		return $collections;
+	}
+}
+	
