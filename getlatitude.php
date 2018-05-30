@@ -8,7 +8,7 @@ function check_status($jsondata) {
 }
  
 function get_lat($add){
-$address = $add;
+$address = $add_new;
     // Make the HTTP request
  
     $url = 'http://maps.googleapis.com/maps/api/geocode/json?address='.urlencode($address);
